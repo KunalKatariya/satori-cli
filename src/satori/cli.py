@@ -3,6 +3,8 @@
 Satori CLI - Main entry point
 """
 
+__version__ = "0.1.1"
+
 import os
 import sys
 import multiprocessing
@@ -62,8 +64,6 @@ file_handler.setFormatter(file_formatter)
 root_logger = logging.getLogger()
 root_logger.addHandler(file_handler)
 root_logger.setLevel(logging.DEBUG)
-
-__version__ = "0.1.0"
 
 console = Console()
 
