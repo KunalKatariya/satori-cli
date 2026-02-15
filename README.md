@@ -2,7 +2,7 @@
 
 A live translation CLI tool for macOS. Capture system audio in real-time, transcribe with Whisper, and translate using a beautiful TUI interface.
 
-<img width="561" height="272" alt="image" src="https://github.com/user-attachments/assets/5ad1cec7-82a5-41ca-8920-d5232d1d77f9" />
+<img width="708" height="270" alt="image" src="https://github.com/user-attachments/assets/81218507-69c7-4895-ae0c-b7e7f652f4de" />
 
 
 ## Features
