@@ -1,6 +1,9 @@
 # Satori CLI
 
-A professional live translation CLI tool for macOS. Capture system audio in real-time, transcribe with Whisper, and translate using a beautiful TUI interface.
+A live translation CLI tool for macOS. Capture system audio in real-time, transcribe with Whisper, and translate using a beautiful TUI interface.
+
+<img width="561" height="272" alt="image" src="https://github.com/user-attachments/assets/5ad1cec7-82a5-41ca-8920-d5232d1d77f9" />
+
 
 ## Features
 
