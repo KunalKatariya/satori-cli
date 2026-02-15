@@ -11,26 +11,10 @@ class SatoriCli < Formula
   depends_on "python@3.11"
   depends_on "portaudio"
   depends_on "ffmpeg"
-  depends_on "poetry"
 
   def install
     # Create a virtual environment
-    venv = virtualenv_create(libexec, "python3.11")
-
-    # Upgrade pip
-    system libexec/"bin/pip", "install", "--upgrade", "pip"
-
-    # Install poetry in the virtual environment
-    system libexec/"bin/pip", "install", "poetry"
-
-    # Build the package
-    system libexec/"bin/poetry", "build", "--format", "wheel"
-
-    # Install the wheel
-    venv.pip_install Dir["dist/*.whl"].first
-
-    # Create a wrapper script
-    (bin/"satori").write_env_script libexec/"bin/satori", {}
+    virtualenv_install_with_resources
   end
 
   def caveats
