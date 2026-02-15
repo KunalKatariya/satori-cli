@@ -80,6 +80,48 @@ brew install blackhole-2ch
 # https://existential.audio/blackhole/
 ```
 
+#### Configure Audio Routing (Required for System Audio Capture)
+
+After installing BlackHole, you need to configure your audio routing to capture system audio (YouTube, Spotify, etc.) while still hearing the audio through your speakers/headphones.
+
+**Step 1: Create Multi-Output Device**
+
+1. Open **Audio MIDI Setup** (Applications → Utilities → Audio MIDI Setup)
+2. Click the **"+"** button at the bottom left and select **"Create Multi-Output Device"**
+3. In the Multi-Output Device settings:
+   - ✅ Check **your speakers/headphones** (e.g., "MacBook Pro Speakers" or "External Headphones")
+   - ✅ Check **"BlackHole 2ch"**
+   - Set your speakers as the **Master Device** (right-click → Use This Device For Sound Output)
+4. Rename it to something memorable like **"Speakers + BlackHole"** (double-click the name)
+
+**Step 2: Configure System Settings**
+
+1. Open **System Settings** (System Preferences on older macOS)
+2. Go to **Sound** → **Output**
+3. Select your **Multi-Output Device** (e.g., "Speakers + BlackHole")
+
+**Step 3: Use in Koescript**
+
+Now when you run Koescript with the `--loopback` flag, it will capture system audio:
+
+```bash
+# Transcribe system audio (YouTube, Spotify, etc.)
+koescript translate --loopback
+
+# With translation
+koescript translate --loopback --language ja --translate-to en
+```
+
+You can verify BlackHole is detected:
+```bash
+koescript devices
+```
+
+**Troubleshooting:**
+- If you don't hear audio: Check that your speakers are set as Master Device in Audio MIDI Setup
+- If Koescript doesn't see BlackHole: Make sure BlackHole is checked in your Multi-Output Device
+- To switch back to normal audio: Go to System Settings → Sound → Output and select your regular speakers
+
 ### Install whisper.cpp (Optional - Auto-installed by `koescript init`)
 
 For 30x faster transcription with GPU acceleration.

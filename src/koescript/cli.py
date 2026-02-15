@@ -127,7 +127,9 @@ def cli(ctx):
         console.print("  translate     Start live translation session")
         console.print("  config        Manage configuration")
         console.print()
-        console.print("Run [bold blue]koescript --help[/bold blue] for more information")
+        console.print(
+            "Run [bold blue]koescript --help[/bold blue] for more information"
+        )
 
 
 @cli.command()
@@ -346,7 +348,9 @@ def devices():
         console.print(
             "\n[dim]Tip: Use loopback devices to capture YouTube, Spotify, etc.[/dim]"
         )
-        console.print('[dim]Example: koescript translate --device "BlackHole 2ch"[/dim]\n')
+        console.print(
+            '[dim]Example: koescript translate --device "BlackHole 2ch"[/dim]\n'
+        )
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
