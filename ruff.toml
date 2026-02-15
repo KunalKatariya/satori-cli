@@ -1,0 +1,7 @@
+# Ruff configuration
+# Main config is in pyproject.toml under [tool.ruff]
+# This file provides additional format options
+
+[format]
+quote-style = "double"
+indent-style = "space"
