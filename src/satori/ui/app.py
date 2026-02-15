@@ -267,7 +267,7 @@ class SatoriApp(App):
         phrase_timeout = 2.0  # Wait 2 seconds of silence for complete thoughts
 
         # Max phrase duration for real-time feedback (don't wait for silence)
-        max_phrase_duration = 6.0  # Process every 6s for real-time feel
+        max_phrase_duration = 4.0  # Reduced from 6s for lower latency
 
         # Track if we're currently in a phrase
         in_phrase = False
@@ -313,7 +313,7 @@ class SatoriApp(App):
                 should_transcribe = False
 
                 if in_phrase and phrase_duration > 0.5:
-                    # Real-time: transcribe every 6s even without pause
+                    # Real-time: transcribe every 4s even without pause
                     if phrase_duration >= max_phrase_duration:
                         should_transcribe = True
 

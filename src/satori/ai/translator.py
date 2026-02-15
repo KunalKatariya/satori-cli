@@ -175,9 +175,10 @@ class Translator:
             translated = self.model.generate(
                 **inputs,
                 forced_bos_token_id=forced_bos_token_id,
-                max_length=512,
-                num_beams=5,  # Balanced for speed and quality (was 10, too slow)
+                max_length=200,  # Reduced from 512 for faster inference
+                num_beams=2,  # Reduced from 5 for lower latency (greedy-like speed)
                 early_stopping=True,  # Stop when all beams finish
+                length_penalty=0.8,  # Slightly prefer shorter outputs for speed
             )
             translated_text = self.tokenizer.decode(
                 translated[0], skip_special_tokens=True
