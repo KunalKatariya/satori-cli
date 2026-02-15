@@ -164,35 +164,57 @@ class DependencyInstaller:
             console.print("   [dim]Cloning whisper.cpp repository...[/dim]")
 
             if whisper_dir.exists():
-                console.print(
-                    "   [yellow]⚠[/yellow]  Directory ~/whisper.cpp already exists"
+                # Check if binary already exists (directory exists but not built)
+                binary_path = whisper_dir / "build" / "bin" / "whisper-cli"
+                alt_binary_path = whisper_dir / "main"
+
+                if binary_path.exists() or alt_binary_path.exists():
+                    # Directory exists and binary found - should have been detected earlier
+                    console.print(
+                        "   [yellow]⚠[/yellow]  whisper.cpp directory and binary already exist"
+                    )
+                    if not click.confirm("   Rebuild whisper.cpp?", default=False):
+                        return (False, "Installation cancelled")
+                else:
+                    # Directory exists but binary not built - offer to build
+                    console.print(
+                        "   [yellow]⚠[/yellow]  whisper.cpp directory exists but binary not found"
+                    )
+                    console.print(
+                        "   [dim]The repository was cloned but never compiled[/dim]"
+                    )
+                    if click.confirm("   Build whisper.cpp now?", default=True):
+                        # Skip cloning, go straight to building
+                        console.print("   [green]✓[/green] Using existing repository")
+                    else:
+                        if not click.confirm("   Remove and re-clone?", default=False):
+                            return (False, "Installation cancelled")
+
+                        # Remove existing directory
+                        subprocess.run(
+                            ["rm", "-rf", str(whisper_dir)],
+                            check=True,
+                            timeout=30,
+                        )
+
+            # Clone only if directory doesn't exist
+            if not whisper_dir.exists():
+                result = subprocess.run(
+                    [
+                        "git",
+                        "clone",
+                        "https://github.com/ggerganov/whisper.cpp.git",
+                        str(whisper_dir),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=120,  # 2 minute timeout for clone
                 )
-                if not click.confirm("   Remove and re-clone?", default=False):
-                    return (False, "Installation cancelled")
 
-                # Remove existing directory
-                subprocess.run(
-                    ["rm", "-rf", str(whisper_dir)],
-                    check=True,
-                    timeout=30,
-                )
+                if result.returncode != 0:
+                    return (False, f"Clone failed: {result.stderr[:200]}")
 
-            result = subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "https://github.com/ggerganov/whisper.cpp.git",
-                    str(whisper_dir),
-                ],
-                capture_output=True,
-                text=True,
-                timeout=120,  # 2 minute timeout for clone
-            )
-
-            if result.returncode != 0:
-                return (False, f"Clone failed: {result.stderr[:200]}")
-
-            console.print("   [green]✓[/green] Repository cloned")
+                console.print("   [green]✓[/green] Repository cloned")
 
             # Step 2: Build with GPU support
             console.print(
