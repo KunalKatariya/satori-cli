@@ -1,4 +1,4 @@
-"""Logger utility for Satori CLI"""
+"""Logger utility for Koescript CLI"""
 
 import logging
 from typing import Optional

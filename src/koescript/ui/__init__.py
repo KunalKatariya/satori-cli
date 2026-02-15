@@ -1,5 +1,10 @@
-"""UI widgets for Satori CLI."""
+"""UI widgets for Koescript CLI."""
 
-from koescript.ui.app import SatoriApp, StatusBar, TranscriptionDisplay, TranslationDisplay
+from koescript.ui.app import (
+    KoescriptApp,
+    StatusBar,
+    TranscriptionDisplay,
+    TranslationDisplay,
+)
 
-__all__ = ["SatoriApp", "StatusBar", "TranscriptionDisplay", "TranslationDisplay"]
+__all__ = ["KoescriptApp", "StatusBar", "TranscriptionDisplay", "TranslationDisplay"]

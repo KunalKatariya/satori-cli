@@ -1,5 +1,5 @@
-"""Configuration module for Satori CLI."""
+"""Configuration module for Koescript CLI."""
 
-from koescript.config.settings import ConfigManager, SatoriConfig, WhisperConfig
+from koescript.config.settings import ConfigManager, KoescriptConfig, WhisperConfig
 
-__all__ = ["ConfigManager", "SatoriConfig", "WhisperConfig"]
+__all__ = ["ConfigManager", "KoescriptConfig", "WhisperConfig"]

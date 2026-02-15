@@ -1,4 +1,4 @@
-"""AI and transcription module for Satori CLI."""
+"""AI and transcription module for Koescript CLI."""
 
 from koescript.ai.transcriber import WhisperTranscriber
 from koescript.ai.translator import Translator

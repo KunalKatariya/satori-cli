@@ -1,4 +1,4 @@
-"""Configuration management for Satori CLI."""
+"""Configuration management for Koescript CLI."""
 
 import json
 from pathlib import Path
@@ -42,8 +42,8 @@ class TranslationConfig(BaseModel):
         json_schema_extra = {"example": {"target_language": "en", "provider": "none"}}
 
 
-class SatoriConfig(BaseModel):
-    """Main Satori configuration."""
+class KoescriptConfig(BaseModel):
+    """Main Koescript configuration."""
 
     whisper: WhisperConfig = Field(default_factory=WhisperConfig)
     translation: TranslationConfig = Field(default_factory=TranslationConfig)
@@ -67,7 +67,7 @@ class SatoriConfig(BaseModel):
 
 
 class ConfigManager:
-    """Manages Satori configuration."""
+    """Manages Koescript configuration."""
 
     def __init__(self, config_path: Optional[Path] = None) -> None:
         """Initialize config manager.
@@ -78,20 +78,20 @@ class ConfigManager:
         self.config_path = config_path or Path.home() / ".koescript" / "config.json"
         self.config = self._load_config()
 
-    def _load_config(self) -> SatoriConfig:
+    def _load_config(self) -> KoescriptConfig:
         """Load configuration from file or use defaults.
 
         Returns:
-            SatoriConfig object
+            KoescriptConfig object
         """
         if self.config_path.exists():
             try:
                 with open(self.config_path) as f:
                     data = json.load(f)
-                return SatoriConfig(**data)
+                return KoescriptConfig(**data)
             except Exception:
-                return SatoriConfig()
-        return SatoriConfig()
+                return KoescriptConfig()
+        return KoescriptConfig()
 
     def save_config(self) -> None:
         """Save current configuration to file."""

@@ -1,4 +1,4 @@
-"""Dependency installer for Satori CLI."""
+"""Dependency installer for Koescript CLI."""
 
 import os
 import subprocess

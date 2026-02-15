@@ -1,4 +1,4 @@
-"""Models module for Satori CLI."""
+"""Models module for Koescript CLI."""
 
 from koescript.models.downloader import ModelDownloader
 

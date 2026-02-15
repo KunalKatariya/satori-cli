@@ -1,1 +1,1 @@
-"""Commands module for Satori CLI"""
+"""Commands module for Koescript CLI"""

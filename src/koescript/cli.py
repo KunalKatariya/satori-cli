@@ -44,7 +44,7 @@ from koescript.ai import Translator
 from koescript.ai.whisper_cpp import WhisperCppTranscriber
 from koescript.audio import AudioCapture
 from koescript.models import ModelDownloader
-from koescript.ui.app import SatoriApp
+from koescript.ui.app import KoescriptApp
 
 # Set up file logging
 import logging
@@ -69,21 +69,19 @@ console = Console()
 
 
 def print_logo():
-    """Display the Satori CLI logo on boot with gradient effect"""
+    """Display the Koescript logo on boot with gradient effect"""
     logo_lines = [
-        "    ███████╗ █████╗ ████████╗ ██████╗ ██████╗ ██╗",
-        "    ██╔════╝██╔══██╗╚══██╔══╝██╔═══██╗██╔══██╗██║",
-        "    ███████╗███████║   ██║   ██║   ██║██████╔╝██║",
-        "    ╚════██║██╔══██║   ██║   ██║   ██║██╔══██╗██║",
-        "    ███████║██║  ██║   ██║   ╚██████╔╝██║  ██║██║",
-        "    ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝",
+        "  _  _____  _____ ____   ____ ____  ___ ____ _____ ",
+        " | |/ / _ \| ____/ ___| / ___|  _ \|_ _|  _ \_   _|",
+        " | ' / | | |  _| \___ \| |   | |_) || || |_) || |  ",
+        " | . \ |_| | |___ ___) | |___|  _ < | ||  __/ | |  ",
+        " |_|\_\___/|_____|____/ \____|_| \_\___|_|    |_|",
     ]
 
     # Create gradient colors from blue to purple
     gradient_colors = [
         "bold bright_blue",
         "bold blue",
-        "bold medium_purple2",
         "bold medium_purple1",
         "bold medium_purple3",
         "bold magenta",
@@ -105,21 +103,21 @@ def print_logo():
 
 
 @click.group(invoke_without_command=True)
-@click.version_option(version=__version__, prog_name="satori")
+@click.version_option(version=__version__, prog_name="koescript")
 @click.pass_context
 def cli(ctx):
     """
-    Satori - A powerful and intuitive CLI tool
+    Koescript - A powerful and intuitive CLI tool
     """
     # Show logo and version on first invocation
     if ctx.invoked_subcommand is None:
         print_logo()
         console.print(
-            "[bold medium_purple1]Usage:[/bold medium_purple1] satori [COMMAND] [OPTIONS]"
+            "[bold medium_purple1]Usage:[/bold medium_purple1] koescript [COMMAND] [OPTIONS]"
         )
         console.print("[bold medium_purple1]Commands:[/bold medium_purple1]")
         console.print(
-            "  init          Initialize Satori for first-time use (run this first!)"
+            "  init          Initialize Koescript for first-time use (run this first!)"
         )
         console.print(
             "  devices       List available audio devices (microphones & loopback)"
@@ -127,7 +125,7 @@ def cli(ctx):
         console.print("  translate     Start live translation session")
         console.print("  config        Manage configuration")
         console.print()
-        console.print("Run [bold blue]satori --help[/bold blue] for more information")
+        console.print("Run [bold blue]koescript --help[/bold blue] for more information")
 
 
 @cli.command()
@@ -151,7 +149,7 @@ def cli(ctx):
     help="Skip automatic dependency installation",
 )
 def init(model_size: str, skip_download: bool, skip_deps: bool):
-    """Initialize Satori for first-time use.
+    """Initialize Koescript for first-time use.
 
     This command performs initial setup:
     - Installs system dependencies (BlackHole, whisper.cpp) with your consent
@@ -159,10 +157,10 @@ def init(model_size: str, skip_download: bool, skip_deps: bool):
     - Downloads initial Whisper model (optional)
     - Verifies audio device availability
 
-    Run this once before using 'satori translate'.
+    Run this once before using 'koescript translate'.
     """
     console.print(
-        "\n[bold medium_purple1]═══ Satori Initialization ═══[/bold medium_purple1]\n"
+        "\n[bold medium_purple1]═══ Koescript Initialization ═══[/bold medium_purple1]\n"
     )
 
     # Step 1: Create directories
@@ -222,12 +220,12 @@ def init(model_size: str, skip_download: bool, skip_deps: bool):
                         "   [yellow]⚠[/yellow]  Model download skipped or failed"
                     )
                     console.print(
-                        "[dim]Models will be downloaded automatically when you run 'satori translate'[/dim]"
+                        "[dim]Models will be downloaded automatically when you run 'koescript translate'[/dim]"
                     )
         except Exception as e:
             console.print(f"   [yellow]⚠[/yellow]  Model download error: {e}")
             console.print(
-                "[dim]Models will be downloaded automatically when you run 'satori translate'[/dim]"
+                "[dim]Models will be downloaded automatically when you run 'koescript translate'[/dim]"
             )
     else:
         console.print(
@@ -278,23 +276,23 @@ def init(model_size: str, skip_download: bool, skip_deps: bool):
 
     # Step 5: Summary
     console.print("[bold medium_purple1]═══ Setup Complete ═══[/bold medium_purple1]\n")
-    console.print("[bold green]✓[/bold green] Satori is ready to use!\n")
+    console.print("[bold green]✓[/bold green] Koescript is ready to use!\n")
     console.print("[bold]Next steps:[/bold]")
     console.print("  1. List available audio devices:")
-    console.print("     [cyan]satori devices[/cyan]")
+    console.print("     [cyan]koescript devices[/cyan]")
     console.print()
     console.print("  2. Start transcribing with microphone:")
-    console.print("     [cyan]satori translate[/cyan]")
+    console.print("     [cyan]koescript translate[/cyan]")
     console.print()
     console.print("  3. Transcribe YouTube/Spotify (with BlackHole):")
-    console.print("     [cyan]satori translate --loopback[/cyan]")
+    console.print("     [cyan]koescript translate --loopback[/cyan]")
     console.print()
     console.print("  4. Translate Japanese to English:")
     console.print(
-        "     [cyan]satori translate --loopback --language ja --translate-to en[/cyan]"
+        "     [cyan]koescript translate --loopback --language ja --translate-to en[/cyan]"
     )
     console.print()
-    console.print("[dim]Run 'satori --help' for more options[/dim]\n")
+    console.print("[dim]Run 'koescript --help' for more options[/dim]\n")
 
 
 @cli.command()
@@ -346,7 +344,7 @@ def devices():
         console.print(
             "\n[dim]Tip: Use loopback devices to capture YouTube, Spotify, etc.[/dim]"
         )
-        console.print('[dim]Example: satori translate --device "BlackHole 2ch"[/dim]\n')
+        console.print('[dim]Example: koescript translate --device "BlackHole 2ch"[/dim]\n')
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {str(e)}")
@@ -357,7 +355,7 @@ def devices():
 @click.option(
     "--device",
     default=None,
-    help="Audio device name (e.g., 'BlackHole 2ch'). Use 'satori devices' to list all.",
+    help="Audio device name (e.g., 'BlackHole 2ch'). Use 'koescript devices' to list all.",
 )
 @click.option(
     "--loopback",
@@ -389,10 +387,10 @@ def translate(
     """Start live translation session with real-time transcription.
 
     Captures audio from your configured device, transcribes with Whisper,
-    and displays results in the Satori TUI.
+    and displays results in the Koescript TUI.
 
     For YouTube/Spotify transcription, use --loopback flag or specify a loopback device.
-    Run 'satori devices' to see available devices.
+    Run 'koescript devices' to see available devices.
 
     \b
     Keyboard shortcuts:
@@ -401,13 +399,13 @@ def translate(
 
     \b
     Examples:
-      satori translate --loopback  # YouTube with GPU acceleration
-      satori translate --device "BlackHole 2ch" --model small
-      satori translate --model large  # Use microphone, better accuracy
-      satori translate --loopback --language ja --translate-to en
+      koescript translate --loopback  # YouTube with GPU acceleration
+      koescript translate --device "BlackHole 2ch" --model small
+      koescript translate --model large  # Use microphone, better accuracy
+      koescript translate --loopback --language ja --translate-to en
     """
     console.print(
-        "[bold medium_purple1]Launching Satori live translation...[/bold medium_purple1]"
+        "[bold medium_purple1]Launching Koescript live translation...[/bold medium_purple1]"
     )
 
     try:
@@ -453,7 +451,7 @@ def translate(
                 )
                 console.print(
                     "[dim]Falling back to default microphone. "
-                    "Run 'satori devices' to see available devices.[/dim]"
+                    "Run 'koescript devices' to see available devices.[/dim]"
                 )
         elif device:
             console.print(f"[dim]Selecting device: {device}[/dim]")
@@ -551,7 +549,7 @@ def translate(
             )
 
         # Create and run the app
-        app = SatoriApp(
+        app = KoescriptApp(
             audio_capture=audio_capture,
             whisper_transcriber=whisper_transcriber,
             translator=translator,

@@ -1,4 +1,4 @@
-"""Faster Whisper transcription service for Satori CLI."""
+"""Faster Whisper transcription service for Koescript CLI."""
 
 import logging
 from typing import Optional

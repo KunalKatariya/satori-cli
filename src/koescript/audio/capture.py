@@ -1,4 +1,4 @@
-"""Audio capture module for Satori CLI using SoundCard."""
+"""Audio capture module for Koescript CLI using SoundCard."""
 
 from typing import Any, Optional
 

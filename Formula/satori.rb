@@ -1,4 +1,4 @@
-class SatoriCli < Formula
+class Koescript < Formula
   include Language::Python::Virtualenv
 
   desc "Real-time multilingual transcription and translation with GPU acceleration"

@@ -1,4 +1,4 @@
-"""Main Textual TUI application for Satori."""
+"""Main Textual TUI application for Koescript."""
 
 import asyncio
 import logging
@@ -134,8 +134,8 @@ class TranslationDisplay(RichLog):
             self.write(text)
 
 
-class SatoriApp(App):
-    """Main Satori CLI application with live transcription."""
+class KoescriptApp(App):
+    """Main Koescript CLI application with live transcription."""
 
     CSS = """
     Screen {
@@ -159,7 +159,7 @@ class SatoriApp(App):
     }
     """
 
-    TITLE = "Satori - Live Translation"
+    TITLE = "Koescript - Live Translation"
     BINDINGS = [
         ("ctrl+c", "quit", "Exit"),
         ("ctrl+r", "reset", "Reset"),
@@ -171,7 +171,7 @@ class SatoriApp(App):
         whisper_transcriber: Any = None,
         translator: Optional["Translator"] = None,
     ) -> None:
-        """Initialize Satori app with audio and transcription components.
+        """Initialize Koescript app with audio and transcription components.
 
         Args:
             audio_capture: AudioCapture instance for audio input

@@ -1,1 +1,1 @@
-"""Utilities module for Satori CLI"""
+"""Utilities module for Koescript CLI"""
