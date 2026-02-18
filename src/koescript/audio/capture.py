@@ -1,31 +1,19 @@
-"""Audio capture module for Koescript CLI using SoundCard."""
+"""Audio capture module for Koescript CLI with cross-platform backend support."""
 
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
-import soundcard as sc
 
-
-class AudioDevice:
-    """Represents an audio device."""
-
-    def __init__(self, device: Any) -> None:
-        """Initialize an audio device wrapper.
-
-        Args:
-            device: A soundcard microphone object
-        """
-        self.device = device
-        self.name = device.name
-        self.id = device.wasapi_name if hasattr(device, "wasapi_name") else device.name
-
-    def __repr__(self) -> str:
-        """String representation of the audio device."""
-        return f"AudioDevice(name='{self.name}')"
+from koescript.audio.backends import AudioDevice, get_audio_backend
+from koescript.audio.backends.base import AudioBackend
 
 
 class AudioCapture:
-    """Handles audio capture from system audio or specific devices."""
+    """Handles audio capture from system audio or specific devices.
+
+    This class uses platform-specific audio backends to provide consistent
+    audio capture functionality across macOS, Linux, and Windows.
+    """
 
     def __init__(self, sample_rate: int = 16000, channels: int = 1) -> None:
         """Initialize the audio capture handler.
@@ -37,19 +25,26 @@ class AudioCapture:
         self.sample_rate = sample_rate
         self.channels = channels
         self.is_recording = False
-        self._current_device: Optional[Any] = None
+        self._current_device: Optional[AudioDevice] = None
+
+        # Get platform-appropriate audio backend
+        self._backend: AudioBackend = get_audio_backend(
+            sample_rate=sample_rate, channels=channels
+        )
 
     def get_available_devices(self) -> list[AudioDevice]:
         """Get list of all available microphone devices.
 
         Returns:
             List of AudioDevice objects
+
+        Raises:
+            RuntimeError: If device enumeration fails
         """
         try:
-            microphones = sc.all_microphones(include_loopback=True)
-            return [AudioDevice(mic) for mic in microphones]
+            return self._backend.get_available_devices(include_loopback=True)
         except Exception as e:
-            raise RuntimeError(f"Failed to get audio devices: {e}")
+            raise RuntimeError(f"Failed to get audio devices: {e}") from e
 
     def get_default_device(self) -> AudioDevice:
         """Get the default system microphone.
@@ -61,12 +56,9 @@ class AudioCapture:
             RuntimeError: If default device cannot be found
         """
         try:
-            default_mic = sc.default_microphone()
-            if default_mic is None:
-                raise RuntimeError("No default microphone found")
-            return AudioDevice(default_mic)
+            return self._backend.get_default_device()
         except Exception as e:
-            raise RuntimeError(f"Failed to get default microphone: {e}")
+            raise RuntimeError(f"Failed to get default microphone: {e}") from e
 
     def get_device_by_name(self, name: str) -> Optional[AudioDevice]:
         """Get an audio device by name.
@@ -93,17 +85,17 @@ class AudioCapture:
             ValueError: If device is invalid
         """
         if not isinstance(device, AudioDevice):
-            raise ValueError("Invalid device type")
-        self._current_device = device.device
+            raise ValueError("Invalid device type - must be AudioDevice")
+        self._current_device = device
 
     def start_recording(self) -> None:
         """Start audio recording from the current device.
 
         Raises:
-            RuntimeError: If no device is set or recording fails
+            RuntimeError: If no device is set
         """
         if self._current_device is None:
-            raise RuntimeError("No audio device selected")
+            raise RuntimeError("No audio device selected. Call set_device() first.")
         self.is_recording = True
 
     def stop_recording(self) -> None:
@@ -120,23 +112,17 @@ class AudioCapture:
             Audio data as numpy array (1D mono) or None if not recording
 
         Raises:
-            RuntimeError: If recording fails
+            RuntimeError: If recording fails or no device is set
         """
         if not self.is_recording:
             return None
 
-        try:
-            if self._current_device is None:
-                raise RuntimeError("No audio device selected")
+        if self._current_device is None:
+            raise RuntimeError("No audio device selected. Call set_device() first.")
 
-            # Record audio chunk
-            with self._current_device.recorder(
-                samplerate=self.sample_rate, channels=self.channels
-            ) as recorder:
-                audio: np.ndarray = np.array(
-                    recorder.record(numframes=int(self.sample_rate * duration))
-                )
-            # Convert to 1D (mono) for Whisper
-            return audio.squeeze()
+        try:
+            # Use backend to record audio chunk
+            audio_data = self._backend.record_chunk(self._current_device, duration)
+            return audio_data
         except Exception as e:
-            raise RuntimeError(f"Failed to capture audio: {e}")
+            raise RuntimeError(f"Failed to capture audio: {e}") from e

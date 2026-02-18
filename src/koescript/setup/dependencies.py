@@ -1,8 +1,7 @@
-"""Dependency installer for Koescript CLI."""
+"""Dependency installer for Koescript CLI with cross-platform support."""
 
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -10,91 +9,38 @@ import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from koescript.platform import get_platform_backend
+
 console = Console()
 
 
 class DependencyInstaller:
-    """Handles installation of system dependencies."""
+    """Handles installation of system dependencies with cross-platform support."""
 
     @staticmethod
-    def check_homebrew() -> bool:
-        """Check if Homebrew is installed.
+    def check_virtual_audio_driver() -> bool:
+        """Check if virtual audio driver is installed (platform-aware).
 
         Returns:
-            True if Homebrew is available, False otherwise
+            True if virtual audio driver is installed, False otherwise
         """
-        try:
-            result = subprocess.run(
-                ["which", "brew"], capture_output=True, text=True, timeout=5
-            )
-            return result.returncode == 0
-        except Exception:
-            return False
+        platform_backend = get_platform_backend()
+        return platform_backend.audio.check_virtual_audio_driver()
 
     @staticmethod
-    def check_blackhole() -> bool:
-        """Check if BlackHole is installed.
-
-        Returns:
-            True if BlackHole is installed, False otherwise
-        """
-        try:
-            # Check if BlackHole is installed via Homebrew
-            result = subprocess.run(
-                ["brew", "list", "blackhole-2ch"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode == 0:
-                return True
-
-            # Check if BlackHole audio device exists
-            result = subprocess.run(
-                ["system_profiler", "SPAudioDataType"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            return "BlackHole" in result.stdout
-        except Exception:
-            return False
-
-    @staticmethod
-    def install_blackhole() -> Tuple[bool, str]:
-        """Install BlackHole using Homebrew.
+    def install_virtual_audio_driver() -> Tuple[bool, str]:
+        """Install virtual audio driver (platform-aware).
 
         Returns:
             Tuple of (success: bool, message: str)
         """
-        if not DependencyInstaller.check_homebrew():
-            return (
-                False,
-                "Homebrew not found. Please install from https://brew.sh/",
-            )
+        platform_backend = get_platform_backend()
 
-        try:
-            console.print("   [dim]Installing BlackHole via Homebrew...[/dim]")
+        # Show installation message with platform-specific driver name
+        driver_info = platform_backend.audio.get_driver_info()
+        console.print(f"   [dim]Installing {driver_info.name}...[/dim]")
 
-            result = subprocess.run(
-                ["brew", "install", "blackhole-2ch"],
-                capture_output=True,
-                text=True,
-                timeout=300,  # 5 minute timeout
-            )
-
-            if result.returncode == 0:
-                return (True, "BlackHole installed successfully")
-            else:
-                return (
-                    False,
-                    f"Installation failed: {result.stderr[:200]}",
-                )
-
-        except subprocess.TimeoutExpired:
-            return (False, "Installation timeout - please try manually")
-        except Exception as e:
-            return (False, f"Installation error: {str(e)}")
+        return platform_backend.audio.install_virtual_audio_driver()
 
     @staticmethod
     def check_whisper_cpp() -> Optional[Path]:
@@ -217,23 +163,26 @@ class DependencyInstaller:
                 console.print("   [green]✓[/green] Repository cloned")
 
             # Step 2: Build with GPU support
-            console.print(
-                "   [dim]Building with Metal GPU support (this may take 3-5 minutes)...[/dim]"
-            )
+            from koescript.platform import get_platform_backend
 
-            # Detect platform for appropriate GPU flag
-            platform = sys.platform
-            if platform == "darwin":
-                # macOS - use Metal
-                make_command = ["make"]
-                env = {"WHISPER_METAL": "1"}
-            else:
-                # Linux - try CUDA, fall back to CPU
-                make_command = ["make"]
-                env = {}
+            platform_backend = get_platform_backend()
+            gpu_info = platform_backend.gpu.detect_gpu()
+            build_flags = platform_backend.gpu.get_whisper_build_flags()
+
+            if gpu_info and gpu_info.supported:
                 console.print(
-                    "   [dim]Note: CUDA detection will be attempted automatically[/dim]"
+                    f"   [dim]Building with {gpu_info.backend.upper()} GPU support ({gpu_info.name}) - this may take 3-5 minutes...[/dim]"
                 )
+            else:
+                console.print(
+                    "   [dim]Building in CPU-only mode - this may take 3-5 minutes...[/dim]"
+                )
+                if gpu_info and not gpu_info.supported:
+                    console.print(
+                        f"   [dim]Note: {gpu_info.backend.upper()} support coming in future version[/dim]"
+                    )
+
+            make_command = ["make"]
 
             result = subprocess.run(
                 make_command,
@@ -241,7 +190,7 @@ class DependencyInstaller:
                 capture_output=True,
                 text=True,
                 timeout=600,  # 10 minute timeout for build
-                env={**os.environ, **env},
+                env={**os.environ, **build_flags},
             )
 
             if result.returncode != 0:
@@ -282,45 +231,65 @@ class DependencyInstaller:
         blackhole_ok = False
         whisper_cpp_ok = False
 
-        # Check and install BlackHole
+        # Check and install virtual audio driver (platform-aware)
         console.print("\n[bold]Checking dependencies...[/bold]\n")
 
-        if DependencyInstaller.check_blackhole():
-            console.print("   [green]✓[/green] BlackHole is installed")
+        platform_backend = get_platform_backend()
+        driver_info = platform_backend.audio.get_driver_info()
+
+        if DependencyInstaller.check_virtual_audio_driver():
+            console.print(f"   [green]✓[/green] {driver_info.name} is installed")
             blackhole_ok = True
         else:
-            console.print("   [yellow]⚠[/yellow]  BlackHole not found")
+            console.print(f"   [yellow]⚠[/yellow]  {driver_info.name} not found")
 
-            if not DependencyInstaller.check_homebrew():
+            # Check if package manager is available
+            if (
+                platform_backend.package_manager is None
+                or not platform_backend.package_manager.is_available()
+            ):
                 console.print(
-                    "\n[dim]BlackHole requires Homebrew for automatic installation[/dim]"
+                    f"\n[dim]{driver_info.name} automatic installation requires a package manager[/dim]"
                 )
-                console.print("[dim]Install Homebrew: https://brew.sh/[/dim]")
                 console.print(
-                    "[dim]Or install BlackHole manually: https://existential.audio/blackhole/[/dim]\n"
+                    f"[dim]Please install {driver_info.name} manually[/dim]\n"
                 )
             else:
                 console.print(
-                    "\n[dim]BlackHole is required for system audio capture (YouTube, Spotify, etc.)[/dim]"
+                    f"\n[dim]{driver_info.name} is required for system audio capture (YouTube, Spotify, etc.)[/dim]"
                 )
-                console.print("[dim]This will run: brew install blackhole-2ch[/dim]\n")
+                console.print(
+                    f"[dim]This will install via {platform_backend.package_manager.get_name()}[/dim]\n"
+                )
 
-                if click.confirm("   Install BlackHole now?", default=True):
-                    success, message = DependencyInstaller.install_blackhole()
+                if click.confirm(f"   Install {driver_info.name} now?", default=True):
+                    success, message = (
+                        DependencyInstaller.install_virtual_audio_driver()
+                    )
                     if success:
                         console.print(f"   [green]✓[/green] {message}")
-                        console.print(
-                            "\n[yellow]Note:[/yellow] You may need to configure Multi-Output Device in Audio MIDI Setup"
-                        )
-                        console.print(
-                            "[dim]See USAGE.md for audio configuration instructions[/dim]\n"
-                        )
+
+                        # Platform-specific configuration notes
+                        if platform_backend.get_platform_name() == "macOS":
+                            console.print(
+                                "\n[yellow]Note:[/yellow] You may need to configure Multi-Output Device in Audio MIDI Setup"
+                            )
+                            console.print(
+                                "[dim]See README.md for audio configuration instructions[/dim]\n"
+                            )
+                        elif platform_backend.get_platform_name() == "Windows":
+                            console.print(
+                                "\n[yellow]Note:[/yellow] You may need to restart your system for the driver to take effect"
+                            )
+                            console.print(
+                                "[dim]See README.md for audio configuration instructions[/dim]\n"
+                            )
                         blackhole_ok = True
                     else:
                         console.print(f"   [red]✗[/red] {message}")
                 else:
                     console.print(
-                        "   [dim]Skipped - you can install later with: brew install blackhole-2ch[/dim]\n"
+                        f"   [dim]Skipped - you can install {driver_info.name} manually later[/dim]\n"
                     )
 
         # Check and install whisper.cpp

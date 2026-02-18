@@ -1,7 +1,8 @@
-"""WhisperCpp transcription service using native whisper.cpp binary with Metal GPU."""
+"""WhisperCpp transcription service with cross-platform support."""
 
 import logging
 import os
+import platform
 import subprocess
 import tempfile
 from pathlib import Path
@@ -14,40 +15,74 @@ logger = logging.getLogger(__name__)
 
 
 def find_whisper_binary() -> Optional[Path]:
-    """Find whisper.cpp binary in common locations.
+    """Find whisper.cpp binary in common locations (cross-platform).
+
+    Searches for whisper-cli binary on macOS/Linux and whisper-cli.exe on Windows.
 
     Returns:
         Path to binary if found, None otherwise
     """
-    # Common installation paths
+    # Determine executable name based on platform
+    is_windows = platform.system() == "Windows"
+    binary_name = "whisper-cli.exe" if is_windows else "whisper-cli"
+    alt_binary_name = "main.exe" if is_windows else "main"
+
+    # Common installation paths (cross-platform)
     search_paths = [
         # User's home directory builds
-        Path.home() / "whisper.cpp" / "build" / "bin" / "whisper-cli",
-        Path.home() / "whisper.cpp" / "main",
-        # System-wide installations
-        Path("/usr/local/bin/whisper-cli"),
-        Path("/usr/bin/whisper-cli"),
-        # Check PATH
-        Path("whisper-cli"),  # Will work if in PATH
+        Path.home() / "whisper.cpp" / "build" / "bin" / binary_name,
+        Path.home() / "whisper.cpp" / alt_binary_name,
+        Path.home() / ".whisper.cpp" / "build" / "bin" / binary_name,
+        Path.home() / ".whisper.cpp" / alt_binary_name,
     ]
 
+    # Add platform-specific system paths
+    if is_windows:
+        search_paths.extend(
+            [
+                Path("C:/Program Files/whisper.cpp") / binary_name,
+                Path("C:/Program Files (x86)/whisper.cpp") / binary_name,
+            ]
+        )
+    else:
+        search_paths.extend(
+            [
+                Path("/usr/local/bin") / binary_name,
+                Path("/usr/bin") / binary_name,
+            ]
+        )
+
+    # Check all search paths
     for path in search_paths:
         try:
-            # For bare command names (no directory), use 'which' to find in PATH
-            if len(path.parts) == 1 and path.name == "whisper-cli":
-                # Check if in PATH using 'which'
-                result = subprocess.run(
-                    ["which", "whisper-cli"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                )
-                if result.returncode == 0 and result.stdout.strip():
-                    return Path(result.stdout.strip())
-            elif path.exists():
+            if path.exists() and path.is_file():
                 return path
         except Exception:
             continue
+
+    # Last resort: Check if in PATH
+    try:
+        if is_windows:
+            # Windows: use 'where' command
+            result = subprocess.run(
+                ["where", binary_name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        else:
+            # macOS/Linux: use 'which' command
+            result = subprocess.run(
+                ["which", binary_name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+
+        if result.returncode == 0 and result.stdout.strip():
+            return Path(result.stdout.strip().split("\n")[0])  # Take first match
+    except Exception:
+        pass
 
     return None
 

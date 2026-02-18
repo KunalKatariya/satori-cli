@@ -5,36 +5,29 @@ Satori CLI - Main entry point
 
 __version__ = "0.2.0"
 
-import os
 import sys
 import multiprocessing
 
-# CRITICAL: Import numpy FIRST before any data science imports on ARM64 macOS
+# CRITICAL: Import numpy FIRST before any data science imports on ARM64 systems
 # See: https://github.com/OpenNMT/CTranslate2/issues/1181
 # This must happen before importing faster-whisper/ctranslate2
 import numpy as np  # noqa: F401
 
-# Set multiprocessing start method to 'fork' BEFORE anything imports multiprocessing
-if sys.platform == "darwin":
+# Set multiprocessing start method to 'fork' on Unix-like systems
+# This is faster than 'spawn' and works on macOS and Linux
+if sys.platform in ("darwin", "linux"):
     try:
         multiprocessing.set_start_method("fork", force=True)
     except RuntimeError:
         # Already set, that's fine
         pass
 
-# Set macOS fork safety BEFORE any other imports
-# These must be set at module load time
-os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-os.environ.setdefault("OMP_NUM_THREADS", "1")
-os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
-os.environ.setdefault("ACCELERATE_LAPACK", "1")
-os.environ.setdefault("ACCELERATE_BLAS_MULTI_THREAD", "0")
-os.environ.setdefault("PYTHONHASHSEED", "0")
+# Setup platform-specific environment - MUST happen before other imports
+# Import platform backend and setup environment variables
+from koescript.platform import get_platform_backend
 
-# Disable fork warnings and unsafe behaviors on macOS
-if sys.platform == "darwin":
-    os.environ.setdefault("PYTHONWARNINGS", "ignore::RuntimeWarning")
-    os.environ.setdefault("OBJC_DISABLE_INITIALIZE_FORK_SAFETY", "YES")
+_platform_backend = get_platform_backend()
+_platform_backend.setup_environment()
 
 import click
 from rich.console import Console
@@ -248,13 +241,11 @@ def init(model_size: str, skip_download: bool, skip_deps: bool):
             console.print(f"   [green]✓[/green] Found {len(devices)} audio device(s)")
 
             # Show loopback devices
+            loopback_keywords = _platform_backend.audio.get_virtual_audio_keywords()
             loopback_devices = [
                 d
                 for d in devices
-                if any(
-                    kw in d.name.lower()
-                    for kw in ["blackhole", "loopback", "soundflower", "virtual"]
-                )
+                if any(kw in d.name.lower() for kw in loopback_keywords)
             ]
 
             if loopback_devices:
@@ -264,12 +255,10 @@ def init(model_size: str, skip_download: bool, skip_deps: bool):
                 for dev in loopback_devices:
                     console.print(f"      • {dev.name}")
             else:
+                driver_info = _platform_backend.audio.get_driver_info()
                 console.print("   [yellow]⚠[/yellow]  No loopback devices found")
                 console.print(
-                    "\n[dim]Run 'satori init' again to install BlackHole automatically[/dim]"
-                )
-                console.print(
-                    "[dim]Or install manually: brew install blackhole-2ch[/dim]"
+                    f"\n[dim]Run 'koescript init' again to install {driver_info.name} automatically[/dim]"
                 )
         else:
             console.print("   [yellow]⚠[/yellow]  No audio devices found")
@@ -325,16 +314,10 @@ def devices():
             return
 
         for i, device in enumerate(devices, 1):
-            # Try to identify loopback devices by common names
+            # Try to identify loopback devices using platform-specific keywords
+            loopback_keywords = _platform_backend.audio.get_virtual_audio_keywords()
             is_loopback = any(
-                keyword in device.name.lower()
-                for keyword in [
-                    "blackhole",
-                    "loopback",
-                    "soundflower",
-                    "virtual",
-                    "aggregate",
-                ]
+                keyword in device.name.lower() for keyword in loopback_keywords
             )
 
             if is_loopback:
@@ -431,17 +414,9 @@ def translate(
             loopback_device = None
 
             for dev in all_devices:
-                # Check for common loopback device names
-                if any(
-                    keyword in dev.name.lower()
-                    for keyword in [
-                        "blackhole",
-                        "loopback",
-                        "soundflower",
-                        "virtual",
-                        "aggregate",
-                    ]
-                ):
+                # Check for platform-specific loopback device keywords
+                loopback_keywords = _platform_backend.audio.get_virtual_audio_keywords()
+                if any(keyword in dev.name.lower() for keyword in loopback_keywords):
                     loopback_device = dev
                     break
 
@@ -451,9 +426,10 @@ def translate(
                 )
                 audio_capture.set_device(loopback_device)
             else:
+                driver_info = _platform_backend.audio.get_driver_info()
                 console.print(
-                    "[yellow]Warning: No loopback device found. "
-                    "Install BlackHole or similar for system audio capture.[/yellow]"
+                    f"[yellow]Warning: No loopback device found. "
+                    f"Install {driver_info.name} for system audio capture.[/yellow]"
                 )
                 console.print(
                     "[dim]Falling back to default microphone. "
